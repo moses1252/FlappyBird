@@ -25,11 +25,23 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
 
     // game logic
     Bird bird;
-    int velocityY = 0;
+    int velocityX = -4; // rate at which pipes move to the left (simulates bird moving right)
+    int velocityY = 0; // rate at which bird moves up and down
     int gravity = 1; // will be 1 pixel heavy
+    Random random = new Random();
 
-    // variable for game loop
+    // because we have many pipes we need to store them in a list
+    ArrayList<Pipe> pipes;
+
+    // variable for game loop and pipes
     Timer gameLoop;
+    Timer placePipesTimer;
+
+    // Pipes
+    int pipeX = boardWidth;
+    int pipeY = 0;
+    int pipeWidth = 64; // scaled by 1/6
+    int pipeHeight = 512;
 
     class Bird {
         int x = birdX;
@@ -44,6 +56,38 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
         // we can change this bird implementation if you want
     }
 
+    class Pipe {
+        int x = pipeX;
+        int y = pipeY;
+        int width = pipeWidth;
+        int height = pipeHeight;
+        Image img;
+        boolean passed = false; // this is how we will keep track of score
+
+        Pipe(Image img) {
+            this.img = img;
+        }
+
+    }
+
+    public void placePipes() {
+        // (0-1) * pipeHeight/2 -> so this will give us a random number between 0 to 256
+        // 128
+        // 0 - 128 - (0 - 256) -->
+        // so the range is going to be 1/4 pipeHeight -> 3/4 pipeHeight
+
+        int randomPipeY = (int) (pipeY - pipeHeight / 4 - Math.random() * (pipeHeight / 2));
+        int openingSpace = boardHeight / 4;
+
+        Pipe topPipe = new Pipe(topPipeImg);
+        topPipe.y = randomPipeY;
+        pipes.add(topPipe); // we need a timer for this place pipe function
+
+        Pipe bottomPipe = new Pipe(bottomPipeImg);
+        bottomPipe.y = topPipe.y + pipeHeight + openingSpace;
+        pipes.add(bottomPipe);
+    }
+
     FlappyBird() {
         setPreferredSize(new Dimension(boardWidth, boardHeight));
         // setBackground(Color.blue);
@@ -56,14 +100,27 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
         topPipeImg = new ImageIcon(getClass().getResource("./toppipe.png")).getImage();
         bottomPipeImg = new ImageIcon(getClass().getResource("./bottompipe.png")).getImage();
 
-        // bird
+        // bird and pipe
         bird = new Bird(birdImg);
+        pipes = new ArrayList<Pipe>();
+
+        // place pipes timer is used here
+        // this will place a new pipe every 1.5 secs
+        placePipesTimer = new Timer(1500, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                placePipes();
+            }
+        });
+
+        placePipesTimer.start(); // this is the reason the pipes refresh!!
 
         // game timer: we want 60 frames per second
         // 1000 ms = 1 second
         // this refers to the fappy bird class!
         gameLoop = new Timer(1000 / 60, this); // 1000/60 = 16.6
         gameLoop.start(); // without this line the game will only draw once and nvr update again
+
     }
 
     public void paintComponent(Graphics g) {
@@ -77,6 +134,12 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
 
         // bird
         g.drawImage(bird.img, bird.x, bird.y, bird.width, bird.height, null);
+
+        // pipes
+        for (int i = 0; i < pipes.size(); i++) {
+            Pipe pipe = pipes.get(i);
+            g.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height, null);
+        }
     }
 
     public void move() {
@@ -86,6 +149,12 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
         bird.y = Math.max(bird.y, 0);
         // bird.y = Math.max(bird.y, 640); i was trying to get the bird to not fall down
         // into map but didn't work
+
+        // pipes
+        for (int i = 0; i < pipes.size(); i++) {
+            Pipe pipe = pipes.get(i);
+            pipe.x += velocityX;
+        }
     }
 
     @Override
