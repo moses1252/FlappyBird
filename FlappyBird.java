@@ -37,6 +37,7 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
     Timer gameLoop;
     Timer placePipesTimer;
     boolean gameOver = false;
+    double score = 0;
 
     // Pipes
     int pipeX = boardWidth;
@@ -121,7 +122,6 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
         // this refers to the fappy bird class!
         gameLoop = new Timer(1000 / 60, this); // 1000/60 = 16.6
         gameLoop.start(); // without this line the game will only draw once and nvr update again
-
     }
 
     public void paintComponent(Graphics g) {
@@ -141,6 +141,15 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
             Pipe pipe = pipes.get(i);
             g.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height, null);
         }
+
+        // score
+        g.setColor(Color.white);
+        g.setFont(new Font("Arial", Font.PLAIN, 32));
+        if (gameOver) {
+            g.drawString("Game Over: " + String.valueOf((int) score), 10, 35);
+        } else {
+            g.drawString(String.valueOf((int) score), 10, 35);
+        }
     }
 
     public void move() {
@@ -156,14 +165,21 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
             Pipe pipe = pipes.get(i);
             pipe.x += velocityX;
 
+            if (!pipe.passed && bird.x > pipe.x + pipe.width) {
+                pipe.passed = true;
+                score += .5;
+            }
+
             if (collision(bird, pipe)) {
                 gameOver = true;
             }
+
         }
 
         if (bird.y > boardHeight) {
             gameOver = true;
         }
+
     }
 
     boolean collision(Bird a, Pipe b) {
